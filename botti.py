@@ -10,8 +10,10 @@ import os
 import traceback
 import time
 import random
+import aiohttp
 
 import discord
+import disnake
 import requests
 from discord.ext import commands
 import colorama
@@ -21,7 +23,7 @@ from colorama import Fore
 from discord.ext import commands
 
 
-token = ('Tokeni tähä')
+token = ('tänne')
 
 prefix = ("!")
 RPC = ("Fall made this one ;)")
@@ -218,83 +220,29 @@ async def resolve_minecraft_ip(ctx, server_address):
   await ctx.send(response)
 
 
+@bot.command()
+async def cip(ctx, code):
+    urlfivem = f"https://servers-frontend.fivem.net/api/servers/single/{code}"
 
-@bot.command(aliases=["cfx", "fivem", "server"])
-async def find(ctx, cfx):
-  if "https://cfx.re/join/" in cfx:
-    cfxcode = cfx[20:]
-  elif "http://cfx.re/join/" in cfx:
-    cfxcode = cfx[19:]
-  elif "cfx.re/join/" in cfx:
-    cfxcode = cfx[12:]
-  elif "https://servers.fivem.net/servers/detail/" in cfx:
-    cfxcode = cfx[41:]
-  elif "http://servers.fivem.net/servers/detail/" in cfx:
-    cfxcode = cfx[40:]
-  else:
-    cfxcode = cfx
+    async with aiohttp.ClientSession() as session:
+        async with session.get(urlfivem) as res:
+            if res.status == 404:
+                embed = disnake.Embed(
+                    title="Invalid Code",
+                    color=0xc73e10,
+                )
+                embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar)
+                await ctx.send(embed=embed)
+            else:
+                data = await res.json()
+                connect_endpoint = data["Data"]["connectEndPoints"][0]
 
-  r = requests.get(
-      f"https://servers-frontend.fivem.net/api/servers/single/{cfxcode}",
-      headers={
-          "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36"
-      })
-  if r.text == '{"error": "404 Not Found"}':
-    findnieznalembed = discord.Embed(
-        title=":x:  Server not found",
-        colour=discord.Colour(0xf40552),
-        description="The server you specified wasn't found by the bot!")
-    findnieznalembed.set_thumbnail(
-        url=
-        "https://images-ext-1.discordapp.net/external/jPuVkQCmDg9zmBk6xAanj4_l1gJmtnXTBVZ8XPtQxaw/https/freepngimg.com/save/37007-angry-emoji/512x536"
-    )
-    findnieznalembed.set_footer(
-        text="PY-Finder", icon_url="https://cdn.kurwa.club/files/PvE1i.png")
-    await ctx.channel.send(embed=findnieznalembed)
-  else:
-    r = r.json()
-    ep = r['EndPoint']
-    hn = r['Data']['hostname']
-    onlc = r['Data']['clients']
-    maxc = r['Data']['sv_maxclients']
-    lc = r['Data']['vars']['locale']
-    svl = r['Data']['vars']['sv_lan']
-    votes = r['Data']['upvotePower']
-    iv = r['Data']['iconVersion']
-    ip = r['Data']['connectEndPoints'][0]
-    size = len(ip)
-    ipbez = ip[:size - 6]
-    rip = requests.get(f"https://db-ip.com/demo/home.php?s={ipbez}")
-    rip = rip.json()
-    country = rip['demoInfo']['countryCode']
-    city = rip['demoInfo']['city']
-    isp = rip['demoInfo']['isp']
-    org = rip['demoInfo']['organization']
-    build = ""
-    bld = requests.get(
-        f"https://servers-frontend.fivem.net/api/servers/single/{cfxcode}",
-        headers={
-            "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.88 Safari/537.36"
-        })
-    if "sv_enforceGameBuild" in bld.text:
-      bld = bld.json()
-      build = bld['Data']['vars']['sv_enforceGameBuild']
-    else:
-      build = "1604"
-
-    findznalembed = discord.Embed(
-        title=":white_check_mark:  Server found",
-        colour=discord.Colour(0xf40552),
-        description=
-        f"\nCode: `{ep}`\nHostname: `{hn}`\nSlots: `{onlc}/{maxc}`\nBuild: `{build}`\nLocale: `{lc}`\nsv_lan: `{svl}`\nVotes: `{votes}`\n\n\n/info.json: [Click here](http://{ip}/info.json)\n/players.json [Click here](http://{ip}/players.json)\n/dynamic.json [Click here](http://{ip}/dynamic.json)\n\n\nIP: `{ip}`\nCountry: `{country}`\nCity: `{city}`\nISP: `{isp}`\nOrganization: `{org}`\n"
-    )
-    findznalembed.set_thumbnail(
-        url=f"https://servers-live.fivem.net/servers/icon/{ep}/{iv}.png")
-    findznalembed.set_footer(text="PY-Finder",
-                             icon_url="https://cdn.kurwa.club/files/PvE1i.png")
-    await ctx.channel.send(embed=findznalembed)
+                embed = disnake.Embed(
+                    color=0xc73e10,
+                )
+                embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar)
+                embed.add_field(name="IP:Port", value=f"`{connect_endpoint}`")
+                await ctx.send(embed=embed)
 
 
 @bot.command(name='alota')
@@ -475,6 +423,6 @@ async def nick_command(ctx, member: discord.Member, *, new_nickname="I Was Nigge
     except discord.HTTPException as e:
         await ctx.send(f"kusin alleni: {e}")
         
-bot.run('ja vaikka tännekki koska miksiei')
+bot.run('tokeni tänne')
 
 
